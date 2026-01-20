@@ -24,7 +24,9 @@ function initSocketServer(httpServer) {
         }
     });
     io.on("connection", (socket) => {
-        console.log("New socket connection:", socket.id);
+        socket.on('ai-message',async(messagePayload)=>{
+            console.log(messagePayload);
+        })
     });
 }
 
