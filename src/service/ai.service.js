@@ -1,48 +1,63 @@
 const { GoogleGenAI } = require("@google/genai");
 
 const ai = new GoogleGenAI({
-  apiKey: process.env.GOOGLE_API_KEY,
+  apiKey: process.env.GOOGLE_API_KEY, 
 });
 
+
 // Generate AI text response
+
 async function generateResponse(history) {
   try {
+    
+    const contents = history.map((msg) => ({
+      type: "text",
+      text: msg.content || "", 
+    }));
+
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
-      contents: history,
+      contents, 
     });
 
     return response.text || "No response from AI.";
   } catch (err) {
-    if (err?.status === 429)
-      return "AI quota exceeded. Please try again in a moment.";
-
     console.error("Gemini API error:", err);
     return "AI service is temporarily unavailable.";
   }
 }
 
-async function generateVector(content) {
+
+// Generate embeddings/vector
+
+async function generateVector(text) {
   try {
-    // ✅ Pass as an array of strings
+    if (!text || typeof text !== "string") {
+      console.warn("Invalid text for embedding:", text);
+      return null;
+    }
+
     const response = await ai.models.embedContent({
       model: "gemini-embedding-001",
-        requests: [{ text: content }], 
+      contents: [
+        {
+          role: "user",
+          parts: [{ text }],
+        },
+      ],
     });
 
-    // ✅ Correct path to embedding
-    const vector = response?.data?.[0]?.embedding;
+    const vector = response?.embedding?.values;
 
-    if (!Array.isArray(vector) || vector.length === 0) {
-      console.error("Invalid embedding response:", response);
-      throw new Error("Embedding vector missing or empty");
+    if (!vector || !vector.length) {
+      console.error("Empty embedding returned:", response);
+      return null;
     }
 
     return vector;
   } catch (err) {
     console.error("Error generating embedding:", err);
-    // fallback vector (won't crash Pinecone if you add safety check)
-    return Array(768).fill(0);
+    return null;
   }
 }
 

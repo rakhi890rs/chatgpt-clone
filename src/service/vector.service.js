@@ -7,7 +7,7 @@ const pc = new Pinecone({
 const cohortChatgptIndex = pc.index('gpt-clone');
 
 async function createMemory({ messageId, vectors, metadata }) {
-  // ✅ Safety check: skip all-zero vectors
+ 
   if (!vectors || vectors.every(v => v === 0)) {
     console.warn("Skipping upsert: embedding vector is all zeros");
     return;
