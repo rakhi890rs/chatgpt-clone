@@ -8,7 +8,7 @@ async function registerUser(req, res) {
     const isUserAlreadyExists = await userModel.findOne({ email });
 
     if (isUserAlreadyExists) {
-        return res.status(400).json({ message: "User already exists" }); // added return
+        return res.status(400).json({ message: "User already exists" });
     }
 
     const hashPassword = await bcrypt.hash(password, 10);
@@ -16,10 +16,10 @@ async function registerUser(req, res) {
     const user = await userModel.create({
         fullname: { firstName, lastName },
         email,
-        password: hashPassword // added password
+        password: hashPassword 
     });
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET); // fixed user_id -> user._id
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET); 
 
     res.cookie("token", token);
 
@@ -33,25 +33,39 @@ async function registerUser(req, res) {
     });
 }
 
-async function loginUser(req,res){
-    const { email, password }= req.body;
 
-    const user = await userModel.findOne({
-        email
-    })
-    if(!user){
-        return res.status(400).json({message:"Invalid email or password"});
+async function loginUser(req, res) {
+    const { email, password } = req.body;
+
+    // Check if user exists
+    const user = await userModel.findOne({ email });
+    if (!user) {
+        return res.status(400).json({ message: "Invalid email or password" });
     }
-        const token = jwt.sign({id:user._id},process.env.JWT_SECRET);
-        res.cookie("token",token);
-        res.status(200).json({
+
+    // Compare password
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+        return res.status(400).json({ message: "Invalid email or password" });
+    }
+
+    // Generate JWT token
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET);
+
+    // Set token in cookie
+    res.cookie("token", token, { httpOnly: true });
+
+    // Step 5: Send response
+    res.status(200).json({
         message: "Login successful",
         user: {
             _id: user._id,
             email: user.email,
-            fullname: user.fullname}
-        
+            fullname: user.fullname
+        }
     });
-    }
+}
+
+module.exports = { registerUser, loginUser };
 
 module.exports = { registerUser, loginUser };
