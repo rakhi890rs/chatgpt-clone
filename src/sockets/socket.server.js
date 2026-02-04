@@ -41,9 +41,9 @@ function initSocketServer(httpServer) {
       try {
         console.log("User message payload:", messagePayload);
 
-        // ================================
-        // ✅ Parallel DB save + vector generation
-        // ================================
+        
+        // 1️ Save user message & generate vector in parallel
+       
         const [userMessage, userVector] = await Promise.all([
           messageModel.create({
             chat: messagePayload.chat,
@@ -54,7 +54,7 @@ function initSocketServer(httpServer) {
           aiService.generateVector(extractText(messagePayload.content))
         ]);
 
-        // Save user vector in Pinecone (still needed for RAG memory)
+        // Save user vector in Pinecone
         if (userVector) {
           await createMemory({
             messageId: userMessage._id.toString(),
@@ -68,103 +68,81 @@ function initSocketServer(httpServer) {
           });
         }
 
-        // ================================
-        // Commented out old sequential code
-        // ================================
-        /*
-        // Save user message
-        const userMessage = await messageModel.create({
-          chat: messagePayload.chat,
-          user: socket.user._id,
-          content: messagePayload.content,
-          role: "user",
-        });
-
-        // Generate user vector
-        const userVector = await aiService.generateVector(extractText(messagePayload.content));
-
-        if (userVector) {
-          await createMemory({
-            messageId: userMessage._id.toString(),
-            vectors: userVector,
-            metadata: {
-              chat: messagePayload.chat,
-              user: socket.user._id,
-              role: "user",
-              text: messagePayload.content,
-            },
-          });
-        }
-        */
-
-        // Query memory
-        let memory = { matches: [] };
-        if (userVector) {
-          memory = await queryMemory({
-            queryVector: userVector,
-            limit: 3,
-            metadata: { chat: messagePayload.chat },
-          });
-        }
-
-        // Fetch last 20 chat messages
-        const chatHistory = (
-          await messageModel
+       
+        //  Query memory & fetch chat history in parallel
+      
+        const [memory, chatHistory] = await Promise.all([
+          userVector
+            ? queryMemory({
+                queryVector: userVector,
+                limit: 3,
+                metadata: { chat: messagePayload.chat },
+              })
+            : { matches: [] },
+          messageModel
             .find({ chat: messagePayload.chat })
             .sort({ createdAt: -1 })
             .limit(20)
             .lean()
-        ).reverse();
+        ]);
 
-        // Flatten messages for AI
-        const formattedHistory = chatHistory.map((item) => ({
+        const formattedHistory = chatHistory.reverse().map(item => ({
           role: item.role,
           content: item.content,
         }));
 
-        // Long-term memory as plain strings
-        const longTermMemory = memory.matches.map((item) => ({
+        const longTermMemory = memory.matches.map(item => ({
           role: "system",
           content: item.metadata.text,
         }));
 
-        // Combine memory + chat history
         const aiInput = [...longTermMemory, ...formattedHistory];
-
         console.log("AI input:", aiInput);
 
-        // Generate AI response
+        //  Generate AI response
+       
         const response = await aiService.generateResponse(aiInput);
 
-        // Save AI message
-        const modelMessage = await messageModel.create({
-          chat: messagePayload.chat,
-          user: socket.user._id,
-          content: response,
-          role: "model",
-        });
 
-        // Generate AI vector
-        const modelVector = await aiService.generateVector(extractText(response));
-
-        if (modelVector) {
-          await createMemory({
-            messageId: modelMessage._id.toString(),
-            vectors: modelVector,
-            metadata: {
-              chat: messagePayload.chat,
-              user: socket.user._id,
-              role: "model",
-              text: response,
-            },
-          });
-        }
-
-        // Emit AI response to user
+        //  Emit AI response immediately (optimistic)
+       
         socket.emit("ai-response", {
           content: response,
           chat: messagePayload.chat,
         });
+
+       
+        //  Save AI message & generate vector in background
+        
+        (async () => {
+          try {
+            const [modelMessage, modelVector] = await Promise.all([
+              messageModel.create({
+                chat: messagePayload.chat,
+                user: socket.user._id,
+                content: response,
+                role: "model",
+              }),
+              aiService.generateVector(extractText(response)),
+            ]);
+
+            // Save AI vector in Pinecone
+            if (modelVector) {
+              await createMemory({
+                messageId: modelMessage._id.toString(),
+                vectors: modelVector,
+                metadata: {
+                  chat: messagePayload.chat,
+                  user: socket.user._id,
+                  role: "model",
+                  text: response,
+                },
+              });
+            }
+          } catch (err) {
+            console.error("Error saving AI response/vector:", err);
+          }
+        })();
 
       } catch (err) {
         console.error("Socket AI error:", err);
