@@ -6,6 +6,7 @@ const userModel = require("../models/user.model");
 const messageModel = require("../models/message.model");
 const aiService = require("../service/ai.service");
 const { createMemory, queryMemory } = require("../service/vector.service");
+
 function extractText(msg) {
   if (typeof msg === "string") return msg;
   if (msg.content) return msg.content;
@@ -14,6 +15,7 @@ function extractText(msg) {
   }
   return "";
 }
+
 function initSocketServer(httpServer) {
   const io = new Server(httpServer, {});
 
@@ -39,6 +41,37 @@ function initSocketServer(httpServer) {
       try {
         console.log("User message payload:", messagePayload);
 
+        // ================================
+        // ✅ Parallel DB save + vector generation
+        // ================================
+        const [userMessage, userVector] = await Promise.all([
+          messageModel.create({
+            chat: messagePayload.chat,
+            user: socket.user._id,
+            content: messagePayload.content,
+            role: "user",
+          }),
+          aiService.generateVector(extractText(messagePayload.content))
+        ]);
+
+        // Save user vector in Pinecone (still needed for RAG memory)
+        if (userVector) {
+          await createMemory({
+            messageId: userMessage._id.toString(),
+            vectors: userVector,
+            metadata: {
+              chat: messagePayload.chat,
+              user: socket.user._id,
+              role: "user",
+              text: messagePayload.content,
+            },
+          });
+        }
+
+        // ================================
+        // Commented out old sequential code
+        // ================================
+        /*
         // Save user message
         const userMessage = await messageModel.create({
           chat: messagePayload.chat,
@@ -48,7 +81,7 @@ function initSocketServer(httpServer) {
         });
 
         // Generate user vector
-       const userVector = await aiService.generateVector(extractText(messagePayload.content));
+        const userVector = await aiService.generateVector(extractText(messagePayload.content));
 
         if (userVector) {
           await createMemory({
@@ -62,6 +95,7 @@ function initSocketServer(httpServer) {
             },
           });
         }
+        */
 
         // Query memory
         let memory = { matches: [] };
@@ -85,7 +119,7 @@ function initSocketServer(httpServer) {
         // Flatten messages for AI
         const formattedHistory = chatHistory.map((item) => ({
           role: item.role,
-          content: item.content, 
+          content: item.content,
         }));
 
         // Long-term memory as plain strings
@@ -113,7 +147,6 @@ function initSocketServer(httpServer) {
         // Generate AI vector
         const modelVector = await aiService.generateVector(extractText(response));
 
-
         if (modelVector) {
           await createMemory({
             messageId: modelMessage._id.toString(),
@@ -127,10 +160,12 @@ function initSocketServer(httpServer) {
           });
         }
 
+        // Emit AI response to user
         socket.emit("ai-response", {
           content: response,
           chat: messagePayload.chat,
         });
+
       } catch (err) {
         console.error("Socket AI error:", err);
       }
