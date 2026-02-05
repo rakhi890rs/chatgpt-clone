@@ -1,5 +1,6 @@
 import { useState } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -8,6 +9,7 @@ const Login = () => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -25,9 +27,12 @@ const Login = () => {
         { withCredentials: true }
       );
       console.log("Login Success:", res.data);
-      alert("Login successful 🎉");
+      
       // Save user if needed
       localStorage.setItem("user", JSON.stringify(res.data.user));
+      
+      // Navigate to home page
+      navigate("/home");
     } catch (err) {
       console.error(err);
       setError(err.response?.data?.message || "Login failed");
