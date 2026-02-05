@@ -8,7 +8,6 @@ const Register = () => {
     email: "",
     password: "",
   });
-
   const [message, setMessage] = useState("");
 
   const handleChange = (e) => {
@@ -21,7 +20,7 @@ const Register = () => {
 
     try {
       const res = await axios.post(
-        "http://localhost:5000/api/auth/register",
+        "http://127.0.0.1:3000/api/auth/register",
         {
           fullname: {
             firstName: formData.firstName,
@@ -32,7 +31,6 @@ const Register = () => {
         },
         { withCredentials: true }
       );
-
       setMessage(res.data.message);
       setFormData({ firstName: "", lastName: "", email: "", password: "" });
     } catch (err) {
@@ -42,74 +40,202 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-blue-50 to-purple-50">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8">
-        <h2 className="text-3xl font-extrabold text-center text-gray-800 mb-6">
-          Create Account
-        </h2>
+    <div style={{
+      minHeight: '100vh',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      padding: '20px'
+    }}>
+      <div style={{
+        background: 'white',
+        borderRadius: '16px',
+        boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+        padding: '40px',
+        width: '100%',
+        maxWidth: '450px'
+      }}>
+        <h2 style={{
+          textAlign: 'center',
+          fontSize: '32px',
+          fontWeight: '700',
+          color: '#1a202c',
+          marginBottom: '8px'
+        }}>Create Account</h2>
 
         {message && (
-          <div
-            className={`p-3 mb-4 rounded ${
-              message.includes("success") ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-            }`}
-          >
+          <div style={{
+            padding: '12px 16px',
+            marginTop: '20px',
+            marginBottom: '20px',
+            borderRadius: '8px',
+            backgroundColor: message.toLowerCase().includes('success') ? '#d4edda' : '#f8d7da',
+            color: message.toLowerCase().includes('success') ? '#155724' : '#721c24',
+            border: `1px solid ${message.toLowerCase().includes('success') ? '#c3e6cb' : '#f5c6cb'}`,
+            fontSize: '14px'
+          }}>
             {message}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div className="flex gap-4">
+        <form onSubmit={handleSubmit}>
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{
+              display: 'block',
+              marginBottom: '8px',
+              fontSize: '14px',
+              fontWeight: '600',
+              color: '#374151'
+            }}>First Name</label>
             <input
               type="text"
               name="firstName"
               value={formData.firstName}
               onChange={handleChange}
-              placeholder="First Name"
-              className="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
               required
+              style={{
+                width: '100%',
+                padding: '12px 16px',
+                fontSize: '15px',
+                border: '2px solid #e5e7eb',
+                borderRadius: '8px',
+                outline: 'none',
+                transition: 'all 0.3s',
+                boxSizing: 'border-box'
+              }}
+              onFocus={(e) => e.target.style.borderColor = '#667eea'}
+              onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
             />
+          </div>
+
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{
+              display: 'block',
+              marginBottom: '8px',
+              fontSize: '14px',
+              fontWeight: '600',
+              color: '#374151'
+            }}>Last Name</label>
             <input
               type="text"
               name="lastName"
               value={formData.lastName}
               onChange={handleChange}
-              placeholder="Last Name"
-              className="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
               required
+              style={{
+                width: '100%',
+                padding: '12px 16px',
+                fontSize: '15px',
+                border: '2px solid #e5e7eb',
+                borderRadius: '8px',
+                outline: 'none',
+                transition: 'all 0.3s',
+                boxSizing: 'border-box'
+              }}
+              onFocus={(e) => e.target.style.borderColor = '#667eea'}
+              onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
             />
           </div>
 
-          <input
-            type="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            placeholder="Email Address"
-            className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
-            required
-          />
-          <input
-            type="password"
-            name="password"
-            value={formData.password}
-            onChange={handleChange}
-            placeholder="Password"
-            className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
-            required
-          />
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{
+              display: 'block',
+              marginBottom: '8px',
+              fontSize: '14px',
+              fontWeight: '600',
+              color: '#374151'
+            }}>Email</label>
+            <input
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              required
+              style={{
+                width: '100%',
+                padding: '12px 16px',
+                fontSize: '15px',
+                border: '2px solid #e5e7eb',
+                borderRadius: '8px',
+                outline: 'none',
+                transition: 'all 0.3s',
+                boxSizing: 'border-box'
+              }}
+              onFocus={(e) => e.target.style.borderColor = '#667eea'}
+              onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+            />
+          </div>
+
+          <div style={{ marginBottom: '24px' }}>
+            <label style={{
+              display: 'block',
+              marginBottom: '8px',
+              fontSize: '14px',
+              fontWeight: '600',
+              color: '#374151'
+            }}>Password</label>
+            <input
+              type="password"
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
+              required
+              style={{
+                width: '100%',
+                padding: '12px 16px',
+                fontSize: '15px',
+                border: '2px solid #e5e7eb',
+                borderRadius: '8px',
+                outline: 'none',
+                transition: 'all 0.3s',
+                boxSizing: 'border-box'
+              }}
+              onFocus={(e) => e.target.style.borderColor = '#667eea'}
+              onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+            />
+          </div>
 
           <button
             type="submit"
-            className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition"
+            style={{
+              width: '100%',
+              padding: '14px',
+              fontSize: '16px',
+              fontWeight: '600',
+              color: 'white',
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              transition: 'transform 0.2s, box-shadow 0.2s',
+              boxShadow: '0 4px 12px rgba(102, 126, 234, 0.4)'
+            }}
+            onMouseOver={(e) => {
+              e.target.style.transform = 'translateY(-2px)';
+              e.target.style.boxShadow = '0 6px 20px rgba(102, 126, 234, 0.6)';
+            }}
+            onMouseOut={(e) => {
+              e.target.style.transform = 'translateY(0)';
+              e.target.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.4)';
+            }}
           >
             Register
           </button>
         </form>
 
-        <p className="text-center text-gray-500 mt-4 text-sm">
+        <p style={{
+          textAlign: 'center',
+          marginTop: '24px',
+          fontSize: '14px',
+          color: '#6b7280'
+        }}>
           Already have an account?{" "}
-          <a href="/login" className="text-blue-600 hover:underline">
+          <a href="/login" style={{
+            color: '#667eea',
+            textDecoration: 'none',
+            fontWeight: '600'
+          }}>
             Login
           </a>
         </p>

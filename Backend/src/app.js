@@ -1,21 +1,25 @@
 const express = require('express');
 const cookieParser = require('cookie-parser');
+const cors = require("cors");
 
-//routes
+// routes
 const authRoutes = require('./routes/auth.routes');
-const chatRoutes = require("./routes/chat.routes")
-
+const chatRoutes = require("./routes/chat.routes");
 
 const app = express();
 
+// middleware
+app.use(cors({
+  origin: "http://localhost:5173",
+  credentials: true
+}));
 
-//middleware
 app.use(express.json()); 
 app.use(express.urlencoded({ extended: true }));      
 app.use(cookieParser()); 
 
 // using routes
 app.use("/api/auth", authRoutes);
-app.use("/api/chat",chatRoutes);
+app.use("/api/chat", chatRoutes);
 
 module.exports = app;
