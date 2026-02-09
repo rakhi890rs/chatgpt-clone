@@ -1,19 +1,13 @@
 const express = require('express');
-const { authUser } = require('../middlewares/auth.middleware');
-const { createChat, getChats, getChatMessages, sendMessage } = require('../controllers/chat.controller');
+const { authUser } = require("../middlewares/auth.middleware");
+const { createChat, getChats } = require("../controllers/chat.controller"); // import getChats
 
 const router = express.Router();
 
-// create new chat
+// Create a new chat
 router.post('/', authUser, createChat);
 
-// get all chats for the user
+// Get all chats for the user
 router.get('/', authUser, getChats);
-
-// get messages of a chat
-router.get('/:chatId', authUser, getChatMessages);
-
-// send a message
-router.post('/:chatId/message', authUser, sendMessage);
 
 module.exports = router;

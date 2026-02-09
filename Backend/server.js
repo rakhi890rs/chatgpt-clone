@@ -12,6 +12,12 @@ const httpServer = http.createServer(app);
 
 // Initialize socket
 initSocketServer(httpServer);
+app.get("/", (req, res) => {
+  res.send("Backend is running 🚀");
+});
+
+// 
+//
 
 // Start server
 httpServer.listen(3000, () => {
