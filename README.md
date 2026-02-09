@@ -1,6 +1,6 @@
 # Auroma AI Chat Backend
 
-A real-time conversational AI backend named **Auroma**, inspired by Lovii, featuring **user authentication, chat management, AI-powered responses, and RAG (Retrieval-Augmented Generation)** using Google Gemini and Pinecone.
+A real-time conversational AI backend named **Auroma**, inspired by Chatgpt, featuring **user authentication, chat management, AI-powered responses, and RAG (Retrieval-Augmented Generation)** using Google Gemini and Pinecone.
 
 ---
 
