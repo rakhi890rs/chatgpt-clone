@@ -1,4 +1,4 @@
-const { Pinecone } = require('@pinecone-database/pinecone');
+const { Pinecone } = require('@pinecone-database/pinecone');   //vector database
 
 const pc = new Pinecone({
   apiKey: process.env.PINECONE_API_KEY,

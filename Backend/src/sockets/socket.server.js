@@ -17,7 +17,13 @@ function extractText(msg) {
 }
 
 function initSocketServer(httpServer) {
-  const io = new Server(httpServer, {});
+  const io = new Server(httpServer, {
+    cors: {
+      origin: "http://localhost:5173",  // <-- frontend origin
+      methods: ["GET", "POST"],
+      credentials: true,
+    }
+  });
 
   io.use(async (socket, next) => {
     const cookieHeader = socket.handshake.headers?.cookie;
@@ -37,13 +43,12 @@ function initSocketServer(httpServer) {
   });
 
   io.on("connection", (socket) => {
+    console.log("A user connected:", socket.user?.email);
+
     socket.on("ai-message", async (messagePayload) => {
       try {
         console.log("User message payload:", messagePayload);
 
-        
-        // 1️ Save user message & generate vector in parallel
-       
         const [userMessage, userVector] = await Promise.all([
           messageModel.create({
             chat: messagePayload.chat,
@@ -54,7 +59,6 @@ function initSocketServer(httpServer) {
           aiService.generateVector(extractText(messagePayload.content))
         ]);
 
-        // Save user vector in Pinecone
         if (userVector) {
           await createMemory({
             messageId: userMessage._id.toString(),
@@ -68,9 +72,6 @@ function initSocketServer(httpServer) {
           });
         }
 
-       
-        //  Query memory & fetch chat history in parallel
-      
         const [memory, chatHistory] = await Promise.all([
           userVector
             ? queryMemory({
@@ -99,21 +100,13 @@ function initSocketServer(httpServer) {
         const aiInput = [...longTermMemory, ...formattedHistory];
         console.log("AI input:", aiInput);
 
-        //  Generate AI response
-       
         const response = await aiService.generateResponse(aiInput);
 
-
-        //  Emit AI response immediately (optimistic)
-       
         socket.emit("ai-response", {
           content: response,
           chat: messagePayload.chat,
         });
 
-       
-        //  Save AI message & generate vector in background
-        
         (async () => {
           try {
             const [modelMessage, modelVector] = await Promise.all([
@@ -126,7 +119,6 @@ function initSocketServer(httpServer) {
               aiService.generateVector(extractText(response)),
             ]);
 
-            // Save AI vector in Pinecone
             if (modelVector) {
               await createMemory({
                 messageId: modelMessage._id.toString(),

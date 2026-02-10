@@ -26,7 +26,7 @@ async function registerUser(req, res) {
         res.cookie("token", token, {
             httpOnly: true,
             secure: false,    // false for localhost HTTP
-            sameSite: "lax",  // works with your frontend
+            sameSite: "lax",  // works with frontend
             maxAge: 1000 * 60 * 60 * 24 // 1 day
         });
 
@@ -72,5 +72,5 @@ async function loginUser(req, res) {
     }
 }
 
-// ✅ Export only once
+
 module.exports = { registerUser, loginUser };

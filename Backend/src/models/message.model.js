@@ -24,3 +24,8 @@ const messageSchema = new mongoose.Schema(
 );
 
 module.exports = mongoose.model("Message", messageSchema);
+
+
+// mongoose.Schema.Types.ObjectId → stores a reference to another document (in this case, the User collection).
+
+// ref: "User" → tells Mongoose which collection to reference.
