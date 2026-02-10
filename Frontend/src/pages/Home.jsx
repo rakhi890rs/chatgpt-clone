@@ -14,30 +14,39 @@ function Home() {
 
   // Fetch user chats on mount
   useEffect(() => {
-    const fetchChats = async () => {
+    const fetchOrCreateChat = async () => {
       try {
-        const res = await axios.get("http://localhost:3000/api/chat", {
-          withCredentials: true, // send cookies for auth
+        let res = await axios.get("http://localhost:3000/api/chat", {
+          withCredentials: true,
         });
+
         if (res.data.chats.length > 0) {
-          setChatId(res.data.chats[0]._id); // use first chat
+          setChatId(res.data.chats[0]._id);
           console.log("Using chatId:", res.data.chats[0]._id);
         } else {
-          console.log("No chats found");
+          console.log("No chats found, creating a new chat...");
+          // Create a new chat if none exists
+          const createRes = await axios.post(
+            "http://localhost:3000/api/chat",
+            { title: "New Chat" },
+            { withCredentials: true }
+          );
+          setChatId(createRes.data.chat._id);
+          console.log("Created new chat with ID:", createRes.data.chat._id);
         }
       } catch (err) {
-        console.error("Error fetching chats:", err);
+        console.error("Error fetching or creating chat:", err);
       } finally {
         setLoadingChats(false);
       }
     };
-    fetchChats();
+
+    fetchOrCreateChat();
   }, []);
 
   // Listen for AI responses
   useEffect(() => {
     socket.on("ai-response", (msg) => {
-      console.log("Received AI response:", msg);
       setMessages((prev) => [...prev, { user: "Aurona", text: msg.content }]);
     });
 
@@ -89,7 +98,7 @@ function Home() {
           overflowY: "auto",
         }}
       >
-        {messages.length === 0 && <p>No messages yet</p>}
+        {messages.length === 0 && <p>No messages yet. Say hi to start!</p>}
         {messages.map((msg, i) => (
           <div key={i} style={{ marginBottom: "8px" }}>
             <strong>{msg.user}:</strong> {msg.text}
@@ -105,7 +114,9 @@ function Home() {
           style={{ width: "80%", marginRight: "10px" }}
           autoComplete="off"
         />
-        <button onClick={sendMessage}>Send</button>
+        <button onClick={sendMessage} disabled={!chatId || !input}>
+          Send
+        </button>
       </div>
     </div>
   );
