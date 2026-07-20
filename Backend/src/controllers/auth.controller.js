@@ -71,6 +71,23 @@ async function loginUser(req, res) {
         res.status(500).json({ message: "Server error" });
     }
 }
+async function getCurrentUser(req, res) {
+    res.status(200).json({
+        user: {
+            _id: req.user._id,
+            email: req.user.email,
+            fullname: req.user.fullname
+        }
+    });
+}
 
+async function logoutUser(req, res) {
+    res.clearCookie("token", {
+        httpOnly: true,
+        secure: false,
+        sameSite: "lax"
+    });
+    res.status(200).json({ message: "Logged out successfully" });
+}
 
-module.exports = { registerUser, loginUser };
+module.exports = { registerUser, loginUser, getCurrentUser, logoutUser };

@@ -1,49 +1,74 @@
-const chatModel = require('../models/chat.model');
-const messageModel = require('../models/message.model');
-const aiService = require('../service/ai.service'); // your AI service
+const chatModel = require("../models/chat.model");
+const messageModel = require("../models/message.model");
+const aiService = require("../service/ai.service");
 
 // Create a new chat
 async function createChat(req, res) {
-  const { title } = req.body;
-  const user = req.user;
+  try {
+    const { title } = req.body;
 
-  const chat = await chatModel.create({
-    user: user._id,
-    title,
-  });
+    const chat = await chatModel.create({
+      user: req.user._id,
+      title,
+    });
 
-  res.status(201).json({
-    message: "Chat created successfully",
-    chat: {
-      _id: chat._id,
-      title: chat.title,
-      lastActivity: chat.lastActivity,
-    },
-  });
+    res.status(201).json({
+      message: "Chat created successfully",
+      chat: {
+        _id: chat._id,
+        title: chat.title,
+        lastActivity: chat.lastActivity,
+      },
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
 }
 
-// Get all chats for the user
+// Get all chats
 async function getChats(req, res) {
-  const chats = await chatModel.find({ user: req.user._id }).sort({ lastActivity: -1 });
-  res.json({ chats });
+  try {
+    const chats = await chatModel
+      .find({ user: req.user._id })
+      .sort({ lastActivity: -1 });
+
+    res.status(200).json({ chats });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
 }
 
-// Get all messages of a chat
+// Get messages of a chat
 async function getChatMessages(req, res) {
-  const chatId = req.params.chatId;
-  const messages = await messageModel.find({ chat: chatId }).sort({ createdAt: 1 });
-  res.json({ messages });
+  try {
+    const { chatId } = req.params;
+
+    const messages = await messageModel
+      .find({ chat: chatId })
+      .sort({ createdAt: 1 });
+
+    res.status(200).json({ messages });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
 }
 
-// Send a message and generate AI response
+// Send message
 async function sendMessage(req, res) {
-  const chatId = req.params.chatId;
+  const { chatId } = req.params;
   const { message } = req.body;
 
-  if (!message) return res.status(400).json({ message: "Message is required" });
+  if (!message) {
+    return res.status(400).json({
+      message: "Message is required",
+    });
+  }
 
   try {
-    // Save user message
+    // Save user's message
     const userMessage = await messageModel.create({
       chat: chatId,
       user: req.user._id,
@@ -51,31 +76,69 @@ async function sendMessage(req, res) {
       role: "user",
     });
 
-    // ✅ Respond to frontend immediately with the user's message
+    // Send user message immediately
     res.status(201).json(userMessage);
 
-    // Generate AI response in background (non-blocking)
-    const aiResponseText = await aiService.generateResponse([
-      { role: "user", content: message }
+    // Generate AI response
+    const aiResponse = await aiService.generateResponse([
+      {
+        role: "user",
+        content: message,
+      },
     ]);
 
     // Save AI response
     await messageModel.create({
       chat: chatId,
       user: req.user._id,
-      content: aiResponseText,
-      role: "ai",
+      content: aiResponse,
+      role: "model", // ✅ Changed from "ai" to "model"
     });
 
-    // Optional: use WebSockets to send AI response instantly to frontend
-    // e.g., socket.emit("ai-response", { chat: chatId, content: aiResponseText });
+    // Optional Socket.IO
+    // io.to(chatId).emit("ai-response", {
+    //   chatId,
+    //   content: aiResponse,
+    // });
 
   } catch (err) {
     console.error("Send message error:", err);
-    // If user message failed, send error
+
     if (!res.headersSent) {
-      res.status(500).json({ message: "Server error" });
+      res.status(500).json({
+        message: "Internal server error",
+      });
     }
+  }
+}
+
+// Delete chat
+async function deleteChat(req, res) {
+  try {
+    const { chatId } = req.params;
+
+    const chat = await chatModel.findOne({
+      _id: chatId,
+      user: req.user._id,
+    });
+
+    if (!chat) {
+      return res.status(404).json({
+        message: "Chat not found",
+      });
+    }
+
+    await messageModel.deleteMany({ chat: chatId });
+    await chatModel.deleteOne({ _id: chatId });
+
+    res.status(200).json({
+      message: "Chat deleted successfully",
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      message: "Server error",
+    });
   }
 }
 
@@ -84,4 +147,5 @@ module.exports = {
   getChats,
   getChatMessages,
   sendMessage,
+  deleteChat,
 };
